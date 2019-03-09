@@ -336,7 +336,7 @@ class Result(object):
 
         :returns: Iterable data sequence
         """
-        invalid_options = ('skip', 'limit')
+        invalid_options = ('skip', )
         if any(x in invalid_options for x in self.options):
             raise ResultException(103, invalid_options, self.options)
 
@@ -347,23 +347,34 @@ class Result(object):
         except ValueError:
             raise ResultException(104, self._page_size)
 
+        limit = self.options.pop('limit', float('inf'))
+        if limit == 0:
+            return
+
         skip = 0
-        while True:
-            response = self._ref(
-                limit=self._page_size,
-                skip=skip,
-                **self.options
-            )
-            result = self._parse_data(response)
-            skip += self._page_size
-            if result:
-                for row in result:
-                    yield row
-                if len(result) < self._page_size:
+        count = 0
+        try:
+            while True:
+                response = self._ref(
+                    limit=self._page_size,
+                    skip=skip,
+                    **self.options
+                )
+                result = self._parse_data(response)
+                skip += self._page_size
+                if result:
+                    for row in result:
+                        yield row
+                        count += 1
+                        if count == limit:
+                            raise StopIteration
+                    if len(result) < self._page_size:
+                        break
+                    del result
+                else:
                     break
-                del result
-            else:
-                break
+        except StopIteration:
+            pass
 
     # pylint: disable=no-self-use
     def _parse_data(self, data):

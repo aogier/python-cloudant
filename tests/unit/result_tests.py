@@ -572,15 +572,18 @@ class ResultTests(UnitTestDbBase):
             invalid_result = [row for row in result]
         self.assertEqual(cm.exception.status_code, 103)
 
-        result = Result(self.view001, limit=10)
-        with self.assertRaises(ResultException) as cm:
-            invalid_result = [row for row in result]
-        self.assertEqual(cm.exception.status_code, 103)
+    def test_limited_iteration(self):
+        """
+        Test that iteration can be limited to a maximum number of items.
+        """
+        result = Result(self.view001, page_size=7, limit=10)
+        self.assertEqual(len([x for x in result]), 10)
 
-        result = Result(self.view001, skip=10, limit=10)
-        with self.assertRaises(ResultException) as cm:
-            invalid_result = [row for row in result]
-        self.assertEqual(cm.exception.status_code, 103)
+        result = Result(self.view001, limit=10)
+        self.assertEqual(len([x for x in result]), 10)
+
+        result = Result(self.view001, page_size=17, limit=10)
+        self.assertEqual(len([x for x in result]), 10)
 
     def test_iteration_invalid_page_size(self):
         """
